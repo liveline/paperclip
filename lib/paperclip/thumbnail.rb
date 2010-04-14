@@ -13,7 +13,7 @@ module Paperclip
     def initialize file, options = {}, attachment = nil
       super
 
-      geometry             = options[:geometry]
+      geometry             = options[:geometry] || ""
       @file                = file
       @crop                = geometry[-1,1] == '#'
       @target_geometry     = Geometry.parse geometry
