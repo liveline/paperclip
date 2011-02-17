@@ -247,7 +247,12 @@ module Paperclip
       new_original = Tempfile.new("paperclip-reprocess")
       new_original.binmode
       if old_original = to_file(:original)
-        new_original.write( old_original.respond_to?(:get) ? old_original.get : old_original.read )
+        if old_original.respond_to? :stream_to
+          log "Streaming #{old_original} to #{new_original}"
+          old_original.stream_to new_original
+        else
+          new_original.write( old_original.read )
+        end
         new_original.rewind
 
         @queued_for_write = { :original => new_original }
