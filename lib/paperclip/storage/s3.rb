@@ -66,21 +66,22 @@ module Paperclip
         end unless defined?(AWS::S3)
 
         base.instance_eval do
-          @s3_credentials = parse_credentials(@options[:s3_credentials])
-          @bucket         = @options[:bucket]         || @s3_credentials[:bucket]
+          @s3_config      = parse_config(@options[:s3_config] || @options[:s3_credentials])
+          @bucket         = @options[:bucket]         || @s3_config[:bucket]
           @bucket         = @bucket.call(self) if @bucket.is_a?(Proc)
-          @s3_options     = @options[:s3_options]     || {}
-          @s3_permissions = @options[:s3_permissions] || :public_read
-          @s3_protocol    = @options[:s3_protocol]    || (@s3_permissions == :public_read ? 'http' : 'https')
-          @s3_headers     = @options[:s3_headers]     || {}
-          @s3_host_alias  = @options[:s3_host_alias]
+          @s3_options     = @options[:s3_options]     || @s3_config[:options] || {}
+          @s3_options     = @s3_options.symbolize_keys
+          @s3_permissions = @options[:s3_permissions] || @s3_config[:permissions] || :public_read
+          @s3_protocol    = @options[:s3_protocol]    || @s3_config[:protocol]    || (@s3_permissions == :public_read ? 'http' : 'https')
+          @s3_headers     = @options[:s3_headers]     || @s3_config[:headers]     || {}
+          @s3_host_alias  = @options[:s3_host_alias]  || @s3_config[:host_alias]
           unless @url.to_s.match(/^:s3.*url$/)
             @path          = @path.gsub(/:url/, @url)
             @url           = ":s3_path_url"
           end
           AWS::S3::Base.establish_connection!( @s3_options.merge(
-            :access_key_id => @s3_credentials[:access_key_id],
-            :secret_access_key => @s3_credentials[:secret_access_key]
+            :access_key_id => @s3_config[:access_key_id],
+            :secret_access_key => @s3_config[:secret_access_key]
           ))
         end
         Paperclip.interpolates(:s3_alias_url) do |attachment, style|
@@ -106,9 +107,9 @@ module Paperclip
         @s3_host_alias
       end
 
-      def parse_credentials creds
-        creds = find_credentials(creds).stringify_keys
-        (creds[Rails.env] || creds).symbolize_keys
+      def parse_config config
+        config = find_config(config).stringify_keys
+        (config[Rails.env] || config).symbolize_keys
       end
 
       def exists?(style = default_style)
@@ -173,19 +174,19 @@ module Paperclip
         @queued_for_delete = []
       end
 
-      def find_credentials creds
-        case creds
+      def find_config config
+        case config
         when File
-          YAML::load(ERB.new(File.read(creds.path)).result)
+          YAML::load(ERB.new(File.read(config.path)).result)
         when String, Pathname
-          YAML::load(ERB.new(File.read(creds)).result)
+          YAML::load(ERB.new(File.read(config)).result)
         when Hash
-          creds
+          config
         else
-          raise ArgumentError, "Credentials are not a path, file, or hash."
+          raise ArgumentError, "Config is not a path, file, or hash."
         end
       end
-      private :find_credentials
+      private :find_config
 
     end
   end

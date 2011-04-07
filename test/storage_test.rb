@@ -31,7 +31,7 @@ class StorageTest < Test::Unit::TestCase
     end
   end
 
-  context "Parsing S3 credentials" do
+  context "Parsing S3 config" do
     setup do
       AWS::S3::Base.stubs(:establish_connection!)
       rebuild_model :storage => :s3,
@@ -42,23 +42,66 @@ class StorageTest < Test::Unit::TestCase
       @avatar = @dummy.avatar
     end
 
-    should "get the correct credentials when RAILS_ENV is production" do
+    should "get the correct config when RAILS_ENV is production" do
       rails_env("production")
       assert_equal({:key => "12345"},
-                   @avatar.parse_credentials('production' => {:key => '12345'},
+                   @avatar.parse_config('production' => {:key => '12345'},
                                              :development => {:key => "54321"}))
     end
 
-    should "get the correct credentials when RAILS_ENV is development" do
+    should "get the correct config when RAILS_ENV is development" do
       rails_env("development")
       assert_equal({:key => "54321"},
-                   @avatar.parse_credentials('production' => {:key => '12345'},
+                   @avatar.parse_config('production' => {:key => '12345'},
                                              :development => {:key => "54321"}))
     end
 
     should "return the argument if the key does not exist" do
       rails_env("not really an env")
-      assert_equal({:test => "12345"}, @avatar.parse_credentials(:test => "12345"))
+      assert_equal({:test => "12345"}, @avatar.parse_config(:test => "12345"))
+    end
+  end
+
+  context "When locating which config to use" do
+    setup do
+      AWS::S3::Base.stubs(:establish_connection!)
+    end
+
+    context "if only :s3_config is supplied" do
+      setup do
+        rebuild_class :storage => :s3,
+                      :s3_config => {:bucket => 's3_config'}
+        @dummy = Dummy.new
+      end
+
+      should "use :s3_config for configuration" do
+        assert_equal "s3_config", @dummy.avatar.bucket_name
+      end
+    end
+
+    context "if only :s3_credentials is supplied" do
+      setup do
+        rebuild_class :storage => :s3,
+                      :s3_credentials => {:bucket => 's3_credentials'}
+        @dummy = Dummy.new
+      end
+
+      should "use :s3_credentials for configuration" do
+        assert_equal "s3_credentials", @dummy.avatar.bucket_name
+      end
+    end
+
+    context "if both :s3_config and :s3_credentials are supplied" do
+      setup do
+        rebuild_class :storage => :s3,
+                      :s3_config => {:bucket => 's3_config'},
+                      :s3_credentials => {:bucket => 's3_credentials'}
+        @dummy = Dummy.new
+      end
+
+      should "use :s3_config for configuration" do
+        assert_equal "s3_config", @dummy.avatar.bucket_name
+      end
     end
   end
 
@@ -316,9 +359,12 @@ class StorageTest < Test::Unit::TestCase
 
   context "with S3 credentials in a YAML file" do
     setup do
-      ENV['S3_KEY']    = 'env_key'
-      ENV['S3_BUCKET'] = 'env_bucket'
-      ENV['S3_SECRET'] = 'env_secret'
+      ENV['S3_KEY']         = 'env_key'
+      ENV['S3_BUCKET']      = 'env_bucket'
+      ENV['S3_SECRET']      = 'env_secret'
+      ENV['S3_PERMISSIONS'] = 'env_permissions'
+      ENV['S3_PROTOCOL']    = 'env_protocol'
+      ENV['S3_HOST_ALIAS']  = 'env_host_alias'
 
       rails_env('test')
 
@@ -328,12 +374,17 @@ class StorageTest < Test::Unit::TestCase
       Dummy.delete_all
 
       @dummy = Dummy.new
+      @avatar = @dummy.avatar
     end
 
-    should "run it the file through ERB" do
+    should "run the file through ERB" do
       assert_equal 'env_bucket', @dummy.avatar.bucket_name
       assert_equal 'env_key', AWS::S3::Base.connection.options[:access_key_id]
       assert_equal 'env_secret', AWS::S3::Base.connection.options[:secret_access_key]
+      assert_equal 'test.example.com', AWS::S3::Base.connection.options[:server]
+      assert_equal 'env_permissions', @dummy.avatar.instance_variable_get('@s3_permissions')
+      assert_equal 'env_protocol', @dummy.avatar.s3_protocol
+      assert_equal 'env_host_alias', @dummy.avatar.s3_host_alias
     end
   end
 

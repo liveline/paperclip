@@ -6,3 +6,10 @@ test:
   bucket: <%= ENV['S3_BUCKET'] %>
   access_key_id: <%= ENV['S3_KEY'] %>
   secret_access_key: <%= ENV['S3_SECRET'] %>
+  options:
+    server: test.example.com
+  permissions: <%= ENV['S3_PERMISSIONS'] %>
+  protocol: <%= ENV['S3_PROTOCOL'] %>
+  headers:
+    X-Testing: test
+  host_alias: <%= ENV['S3_HOST_ALIAS'] %>
