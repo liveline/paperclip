@@ -34,20 +34,20 @@ class IntegrationTest < Test::Unit::TestCase
     should "create its thumbnails properly" do
       assert_match /\b50x50\b/, `identify "#{@dummy.avatar.path(:thumb)}"`
     end
-    
+
     context 'reprocessing with unreadable original' do
       setup { File.chmod(0000, @dummy.avatar.path) }
-      
+
       should "not raise an error" do
         assert_nothing_raised do
           @dummy.avatar.reprocess!
         end
       end
-      
+
       should "return false" do
         assert ! @dummy.avatar.reprocess!
       end
-      
+
       teardown { File.chmod(0644, @dummy.avatar.path) }
     end
 
@@ -83,11 +83,21 @@ class IntegrationTest < Test::Unit::TestCase
 
     teardown { @file.close }
 
-    should "not create the thumbnails upon saving when post-processing is disabled" do
-      @dummy.avatar.post_processing = false
-      @dummy.avatar = @file
-      assert @dummy.save
-      assert !File.exists?(@thumb_path)
+    context "when post-processing is disabled" do
+      setup do
+        @dummy.avatar.post_processing = false
+        @dummy.avatar = @file
+        assert @dummy.save
+      end
+
+      should "not create the thumbnails upon save" do
+        assert !File.exists?(@thumb_path)
+      end
+
+      should "create the thumbnails when reprocess! is called" do
+        @dummy.avatar.reprocess!
+        assert File.exists?(@thumb_path)
+      end
     end
 
     should "create the thumbnails upon saving when post_processing is enabled" do
@@ -567,4 +577,3 @@ class IntegrationTest < Test::Unit::TestCase
     end
   end
 end
-
