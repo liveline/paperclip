@@ -83,11 +83,21 @@ class IntegrationTest < Test::Unit::TestCase
 
     teardown { @file.close }
 
-    should "not create the thumbnails upon saving when post-processing is disabled" do
-      @dummy.avatar.post_processing = false
-      @dummy.avatar = @file
-      assert @dummy.save
-      assert !File.exists?(@thumb_path)
+    context "when post-processing is disabled" do
+      setup do
+        @dummy.avatar.post_processing = false
+        @dummy.avatar = @file
+        assert @dummy.save
+      end
+
+      should "not create the thumbnails upon save" do
+        assert !File.exists?(@thumb_path)
+      end
+
+      should "create the thumbnails when reprocess! is called" do
+        @dummy.avatar.reprocess!
+        assert File.exists?(@thumb_path)
+      end
     end
 
     should "create the thumbnails upon saving when post_processing is enabled" do
