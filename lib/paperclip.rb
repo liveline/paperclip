@@ -256,6 +256,26 @@ module Paperclip
         attachment_for(name).file?
       end
 
+      # ---------- delayed_paperclip ------------------------------------------
+      define_method "#{name}_processed!" do
+        return unless column_exists?(:"#{name}_processing")
+        return unless self.send(:"#{name}_processing?")
+
+        self.send("#{name}_processing=", false)
+      end
+
+      define_method "#{name}_processing!" do
+        return unless column_exists?(:"#{name}_processing")
+        return if self.send(:"#{name}_processing?")
+        return unless attachment_for(name).dirty?
+
+        self.send("#{name}_processing=", true)
+      end
+
+      before_save :"#{name}_processing!"
+      self.send("after_#{name}_post_process", :"#{name}_processed!")
+      # ---------- delayed_paperclip ------------------------------------------
+
       validates_each(name) do |record, attr, value|
         attachment = record.attachment_for(name)
         attachment.send(:flush_errors)
@@ -352,6 +372,12 @@ module Paperclip
       @_paperclip_attachments ||= {}
       @_paperclip_attachments[name] ||= Attachment.new(name, self, self.class.attachment_definitions[name])
     end
+
+    # ---------- delayed_paperclip --------------------------------------------
+    def column_exists?(column)
+      self.class.columns_hash.has_key?(column.to_s)
+    end
+    # ---------- delayed_paperclip --------------------------------------------
 
     def each_attachment
       self.class.attachment_definitions.each do |name, definition|
