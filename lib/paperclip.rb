@@ -272,8 +272,8 @@ module Paperclip
         self.send("#{name}_processing=", true)
       end
 
-      before_save :"#{name}_processing!"
-      self.send("after_#{name}_post_process", :"#{name}_processed!")
+      self.send("before_#{name}_post_process",  :"#{name}_processing!")
+      self.send("after_#{name}_post_process",   :"#{name}_processed!")
       # ---------- delayed_paperclip ------------------------------------------
 
       validates_each(name) do |record, attr, value|
