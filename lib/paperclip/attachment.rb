@@ -109,7 +109,6 @@ module Paperclip
 
       @instance.send "#{@name}_processing!"
       post_process if @post_processing
-      @instance.send "#{@name}_processed!"
 
       # Reset the file size if the original file was reprocessed.
       instance_write(:file_size,   @queued_for_write[:original].size.to_i)
@@ -338,6 +337,7 @@ module Paperclip
       instance.run_paperclip_callbacks(:post_process) do
         instance.run_paperclip_callbacks(:"#{name}_post_process") do
           post_process_styles(*style_args)
+          @instance.send "#{@name}_processed!"
         end
       end
     end
