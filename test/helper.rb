@@ -110,6 +110,14 @@ class FakeModel
   def avatar_processed!
   end
 
+  def column_exists?(column)
+    column.to_s =~ /avatar/
+  end
+
+  def avatar_processing?
+    !!avatar_processing
+  end
+
 end
 
 def attachment options
