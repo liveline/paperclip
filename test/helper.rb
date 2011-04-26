@@ -73,6 +73,7 @@ def rebuild_model options = {}
     table.column :avatar_file_size, :integer
     table.column :avatar_updated_at, :datetime
     table.column :avatar_fingerprint, :string
+    table.column :avatar_processing, :boolean
   end
   rebuild_class options
 end
@@ -93,6 +94,7 @@ class FakeModel
                 :avatar_updated_at,
                 :avatar_content_type,
                 :avatar_fingerprint,
+                :avatar_processing,
                 :id
 
   def errors
@@ -100,6 +102,12 @@ class FakeModel
   end
 
   def run_paperclip_callbacks name, *args
+  end
+
+  def avatar_processing!
+  end
+
+  def avatar_processed!
   end
 
 end
