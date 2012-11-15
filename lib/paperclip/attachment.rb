@@ -54,7 +54,7 @@ module Paperclip
       @convert_options       = options[:convert_options]
       @processors            = options[:processors]
       @options               = options
-      @post_processing       = true
+      @post_processing       = !(options[:skip_processing])
       @queued_for_delete     = []
       @queued_for_write      = {}
       @errors                = {}
