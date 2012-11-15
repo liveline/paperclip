@@ -110,9 +110,15 @@ module Paperclip
       @instance.send "#{@name}_processing!"
       post_process if @post_processing
 
-      # Reset the file size if the original file was reprocessed.
-      instance_write(:file_size,   @queued_for_write[:original].size.to_i)
-      instance_write(:fingerprint, generate_fingerprint(@queued_for_write[:original]))
+      # Liveminds update_dimensions! post_process hook forces a save which in
+      # turn results in the clearing of @queued_for_write and was therefore
+      # causing the following lines to asplode. We don't modify the original
+      # file so shouldn't need these recalculations to run - james
+      if @queued_for_write[:original]
+        # Reset the file size if the original file was reprocessed.
+        instance_write(:file_size,   @queued_for_write[:original].size.to_i)
+        instance_write(:fingerprint, generate_fingerprint(@queued_for_write[:original]))
+      end
     ensure
       uploaded_file.close if close_uploaded_file
     end
