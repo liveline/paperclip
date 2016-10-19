@@ -107,6 +107,7 @@ module Paperclip
 
       @dirty = true
 
+      @instance.send "#{@name}_processing!"
       post_process if @post_processing
 
       # Reset the file size if the original file was reprocessed.
@@ -123,7 +124,11 @@ module Paperclip
     # security, however, for performance reasons. Set use_timestamp to false
     # if you want to stop the attachment update time appended to the url
     def url(style_name = default_style, use_timestamp = @use_timestamp)
-      url = original_filename.nil? ? interpolate(@default_url, style_name) : interpolate(@url, style_name)
+      url = if original_filename.nil? || (@instance.column_exists?(:"#{@name}_processing") && @instance.send(:"#{@name}_processing?"))
+        interpolate(@default_url, style_name)
+      else
+        interpolate(@url, style_name)
+      end
       use_timestamp && updated_at ? [url, updated_at].compact.join(url.include?("?") ? "&" : "?") : url
     end
 
@@ -336,6 +341,7 @@ module Paperclip
       instance.run_paperclip_callbacks(:post_process) do
         instance.run_paperclip_callbacks(:"#{name}_post_process") do
           post_process_styles(*style_args)
+          @instance.send "#{@name}_processed!"
         end
       end
     end
