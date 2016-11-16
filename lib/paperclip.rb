@@ -235,7 +235,10 @@ module Paperclip
     def has_attached_file name, options = {}
       include InstanceMethods
 
-      write_inheritable_attribute(:attachment_definitions, {}) if attachment_definitions.nil?
+      # Rails 3.2 compatability
+      self.class_attribute :attachment_definitions
+      self.attachment_definitions ||= {}
+
       attachment_definitions[name] = {:validations => []}.merge(options)
 
       after_save :save_attached_files
@@ -357,11 +360,6 @@ module Paperclip
       end
     end
 
-    # Returns the attachment definitions defined by each call to
-    # has_attached_file.
-    def attachment_definitions
-      read_inheritable_attribute(:attachment_definitions)
-    end
   end
 
   module InstanceMethods #:nodoc:
